@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GeoTIFF RGB Web</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/geotiff"></script>
+  <script src="https://unpkg.com/georaster"></script>
+  <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
+  <style>
+    #map { width: 100%; height: 600px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    const map = L.map("map").setView([45.5, 12.3], 11);
+
+    // Fond OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Charger le GeoTIFF RGB
+    fetch("ton_geotiff.tif") // <-- mets ton GeoTIFF ici
+      .then(response => response.arrayBuffer())
+      .then(arrayBuffer => georaster(arrayBuffer))
+      .then(graster => {
+          const layer = new GeoRasterLayer({
+              georaster: graster,
+              pixelValuesToColorFn: function(values) {
+                  // RGB: B1=Blue, B2=Green, B3=Red
+                  const r = values[2]; // Red
+                  const g = values[1]; // Green
+                  const b = values[0]; // Blue
+                  return `rgb(${r},${g},${b})`;
+              },
+              resolution: 256
+          });
+          layer.addTo(map);
+          map.fitBounds(layer.getBounds());
+      });
+  </script>
+</body>
+</html>
