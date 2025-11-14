@@ -1,46 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GeoTIFF RGB Web</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/geotiff"></script>
-  <script src="https://unpkg.com/georaster"></script>
-  <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
-  <style>
-    #map { width: 100%; height: 600px; }
-  </style>
+    <title>GeoTIFF Landsat 5 RGB</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/geotiff"></script>
+    <script src="https://unpkg.com/georaster"></script>
+    <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .project-frame {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .project-frame h1 {
+            margin: 5px 0;
+            font-size: 32px;
+            color: #2a5298;
+        }
+
+        .btn-container {
+            margin-top: 15px;
+        }
+
+        .btn-container button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: white;
+            background-color: #2a5298;
+            transition: background 0.3s;
+        }
+
+        .btn-container button:hover {
+            background-color: #1c3970;
+        }
+
+        #map {
+            width: 100%;
+            height: 550px;
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
-  <div id="map"></div>
 
-  <script>
-    const map = L.map("map").setView([45.5, 12.3], 11);
+<div class="project-frame">
+    <h1>GeoTIFF Landsat 5 - RGB</h1>
 
-    // Fond OpenStreetMap
+    <div class="btn-container">
+        <button id="hideBtn">Masquer l'image</button>
+        <button id="showBtn">Visualiser l'image</button>
+    </div>
+
+    <div id="map"></div>
+</div>
+
+<script>
+    const map = L.map('map').setView([45.5, 12.3], 11);
+
+    // Fond OSM
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
+        attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Charger le GeoTIFF RGB
-    fetch("ton_geotiff.tif") // <-- mets ton GeoTIFF ici
-      .then(response => response.arrayBuffer())
-      .then(arrayBuffer => georaster(arrayBuffer))
-      .then(graster => {
-          const layer = new GeoRasterLayer({
-              georaster: graster,
-              pixelValuesToColorFn: function(values) {
-                  // RGB: B1=Blue, B2=Green, B3=Red
-                  const r = values[2]; // Red
-                  const g = values[1]; // Green
-                  const b = values[0]; // Blue
-                  return `rgb(${r},${g},${b})`;
-              },
-              resolution: 256
-          });
-          layer.addTo(map);
-          map.fitBounds(layer.getBounds());
-      });
-  </script>
+    // Charger le GeoTIFF
+    fetch('ton_geotiff.tif') // <-- Mets ici le nom de ton fichier
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => georaster(arrayBuffer))
+        .then(graster => {
+            // Affichage RGB (Landsat 5: B1=Blue, B2=Green, B3=Red)
+            const rgbLayer = new GeoRasterLayer({
+                georaster: graster,
+                pixelValuesToColorFn: function(values) {
+                    const r = values[2]; // Red = Bande 3
+                    const g = values[1]; // Green = Bande 2
+                    const b = values[0]; // Blue = Bande 1
+                    return `rgb(${r},${g},${b})`;
+                },
+                resolution: 256
+            });
+            rgbLayer.addTo(map);
+            map.fitBounds(rgbLayer.getBounds());
+
+            // Boutons Masquer / Afficher
+            const hideBtn = document.getElementById('hideBtn');
+            const showBtn = document.getElementById('showBtn');
+
+            hideBtn.addEventListener('click', () => {
+                map.removeLayer(rgbLayer);
+            });
+
+            showBtn.addEventListener('click', () => {
+                if (!map.hasLayer(rgbLayer)) map.addLayer(rgbLayer);
+            });
+        });
+</script>
+
 </body>
 </html>
